@@ -49,11 +49,11 @@ Unless specified otherwise, training follows a 3-stage approach:
 
 | Parameter | Value |
 |---|---|
-| Hardware | NVIDIA Tesla T4 |
+| Hardware | NVIDIA Tesla T4 / NVIDIA H100|
 | Schedule | Cosine LR with linear warmup |
-| Regularization | Gradient clipping at 1.0 or 0.3 |
+| Regularization | Gradient clipping at 1.0 (unless specified) |
 | Generation | `max_new_tokens=512` |
-| Batch size | 2 per device (with gradient accumulation) |
+| Batch size | in most cases, 2 per device with gradient accumulation |
 | Precision | FP16 (unless specified) |
 
 ### Hyperparameters Tuned
@@ -101,22 +101,22 @@ This rewards correct results while giving partial credit for structurally simila
 | | | 3 | 97,500 | 2,500 | 1 | 0.34353 | |
 | SFT | LoRA | 1 | 4,096 | 1,024 | 71 | 0.52727 | |
 | | | 2 | 8,092 | 2,048 | 72 | 0.62897 | |
-| | | 3 | 97,500 | 2,500 | 1 | 0.49189 | r=16, alpha=64, target: q_proj,k_proj |
+| | | 3 | 97,500 | 2,500 | 1 | 0.49189 | r=16, alpha=64, target: q_proj, k_proj |
 | | | 4 | 97,500 | 2,500 | 1 | 0.44037 | r=16, alpha=64, target: all-linear |
 | | | 5 | 97,500 | 2,500 | 1 | 0.41089 | r=64, alpha=256, target: all-linear |
 | SFT | QLoRA | 5 | 97,500 | 2,500 | 1 | 0.41261 | r=64, alpha=256, all-linear |
 | SFT | Prompt Tuning | 1 | 4,096 | 1,024 | 30 | 7.57019 | Low virtual tokens worked best |
 | DPO | QLoRA | 1 | 6,248 | 695 | 1 | 0.11618 | |
 | SFT+DPO | QLoRA | 1 | 6,248 | 695 | 1 | 0.14759 | |
-| GRPO | LoRA | 1 | 9,750 | 250 | 1 | - | lr=1e-5 |
-| | | 2 | 9,750 | 250 | 1 | - | lr=1e-6 |
-| | | 3 | 9,750 | 250 | 1 | - | lr=1e-8, gradient_clip=0.3 |
-| | | 4 | 19,500 | 500 | 1 | - | lr=1e-6, num_generations=4 |
-| SFT+GRPO | QLoRA | 5 | 19,500 | 500 | 1 | - | lr=1e-6, num_generations=4 |
+| GRPO | LoRA | 1 | 9,750 | 250 | 1 | - | lr=1e-5, score=0.756 |
+| | | 2 | 9,750 | 250 | 1 | - | lr=1e-6, score=0.757 |
+| | | 3 | 9,750 | 250 | 1 | - | lr=1e-8, gradient_clip=0.3, score=0.757 |
+| | | 4 | 19,500 | 500 | 1 | - | lr=1e-6, num_generations=4, score=0.758 |
+| SFT+GRPO | LoRA | 5 | 9,750 | 250 | 1 | - | lr=1e-8, num_generations=8, score=0.756 |
 
 ### Final Model Comparison
 
-| Training Method | PEFT Method | Samples/sec | VRAM Usage | Trainable Params | Score | Notes |
+| Training Method | PEFT Method | Samples/sec (training) | VRAM Usage | Trainable Params | Score | Notes |
 |---|---|---|---|---|---|---|
 | baseline | - | - | 7.4GB | - | 0.679 | Inference only |
 | baseline-nf4 | - | - | 5.6GB | - | 0.648 | 1.7x slower |
@@ -125,9 +125,10 @@ This rewards correct results while giving partial credit for structurally simila
 | SFT | LoRA | 18.6 | 10.4GB | 4.04M | 0.774 | Stage 5 result |
 | SFT | QLoRA | 16.6 | 8.8GB | 4.04M | 0.755 | |
 | SFT | Prompt Tuning | 22.5 | 9.6GB | 10,240 | 0.052 | Poor performance |
-| DPO | LoRA | - | 11.6GB | 4.04M | 0.612 | |
-| SFT+DPO | QLoRA | - | 11.6GB | 4.04M | 0.702 | |
-| GRPO | LoRA | - | - | 4.04M | 0.758 | |
+| DPO | QLoRA | 1.52 | 11.6GB | 4.04M | 0.612 | |
+| SFT+DPO | QLoRA | 1.51 | 11.6GB | 4.04M | 0.702 | |
+| GRPO | LoRA | 1.4 | - | 4.04M | 0.758 | |
+| SFT+GRPO | LoRA | 7.4 | 11.6GB | 4.04M | 0.68 | |
 
 ---
 
@@ -140,21 +141,36 @@ This rewards correct results while giving partial credit for structurally simila
 5. **GRPO** shows promise (0.758) without requiring SFT pretraining
 6. **DPO** underperforms when used alone but improves when combined with SFT
 7. **Prompt tuning** failed for this task (0.052 score)
-8. The 8B baseline outperforms all fine-tuned 0.5B models but at 4.9x slower inference
+8. The 8B baseline outperforms most fine-tuned 0.6B models but at 4.9x slower inference
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-├── configs/           # Training configurations
-├── data/              # Dataset processing
-├── methods/           # Implementation of fine-tuning methods
-│   ├── fullft.py
-│   ├── lora.py
-│   ├── qlora.py
-│   └── ...
-├── evaluation/        # Scoring metrics
-├── scripts/           # Training and evaluation scripts
-└── results/           # Experiment logs and model checkpoints
+├── baseline/                          # Baseline models evaluation
+│   ├── baseline.ipynb
+│   ├── baseline-8B.ipynb
+├── sft/
+│   ├── fullft.ipynb
+│   ├── lora.ipynb
+│   ├── qlora.ipynb
+│   ├── prompt_tuning_random.ipynb     # Prompt tuning with a random initialization
+│   ├── prompt_tuning_text.ipynb       # Prompt tuning with the text initialization
+├── dpo/
+│   ├── dpo.ipynb
+│   ├── sft_dpo.ipynb
+├── grpo/
+│   ├── reward_model/
+│       ├── rm_data_generation.ipynb   # Synthetic data generation for reward modeling
+│       ├── reward_model.ipynb         # Reward modeling
+│   ├── grpo_lr1e5.ipynb
+│   ├── grpo_lr1e6.ipynb
+│   ├── grpo_lr1e8.ipynb
+│   ├── grpo_lr1e6_ngen4.ipynb
+│   ├── grpo_sft.ipynb
+│   ├── grpo_rm.ipynb                  # GRPO with the reward model
+├── _config.example.py                 # WANDB and Groq API keys (placeholder values)
+├── requirements.txt 
+
 ```
