@@ -20,6 +20,54 @@ Generate accurate SQL queries from natural language prompts given database schem
 
 ---
 
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Python 3.8+
+- CUDA-capable GPU (minimum 8GB VRAM for QLoRA, 16GB for Full Fine-tuning)
+- Access to the text-to-SQL dataset (see Dataset section)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/antbartash/text-to-sql.git
+cd text-to-sql
+```
+
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+3. Configure API keys:
+```bash
+cp _config.example.py _config.py
+# Edit _config.py to add your WANDB and Groq API keys
+```
+
+### Quick Start
+
+For the clean example notebooks, navigate to the `examples/` directory:
+
+- **Full Fine-tuning:** `examples/train_fullft.ipynb`
+- **LoRA:** `examples/train_lora.ipynb`
+- **QLoRA (memory-efficient):** `examples/train_qlora.ipynb`
+- **DPO:** `examples/train_dpo.ipynb`
+- **GRPO:** `examples/train_grpo.ipynb`
+- **Reward Model:** `examples/train_rm.ipynb`
+
+### Reproducing Results
+
+To reproduce the full experimental results:
+
+1. Start with baseline evaluation: `baseline/baseline.ipynb`
+2. For hyperparameter search experiments, navigate to the corresponding method directory (`sft/`, `dpo/`, `grpo/`)
+3. The numbered/suffixed notebooks (e.g., `grpo_lr1e5.ipynb`, `lora.ipynb`) contain the actual experiments referenced in the Results section
+
+---
+
 ## 📊 Dataset
 
 - **Size:** 97,500 training / 2,500 validation / 5,851 test examples
@@ -159,7 +207,7 @@ This rewards correct results while giving partial credit for structurally simila
 │   ├── prompt_tuning_text.ipynb       # Prompt tuning with the text initialization
 ├── dpo/
 │   ├── dpo.ipynb
-│   ├── sft_dpo.ipynb
+│   ├── sft_dpo.ipynb                  # Post-training of the SFT model
 ├── grpo/
 │   ├── reward_model/
 │       ├── rm_data_generation.ipynb   # Synthetic data generation for reward modeling
@@ -168,8 +216,15 @@ This rewards correct results while giving partial credit for structurally simila
 │   ├── grpo_lr1e6.ipynb
 │   ├── grpo_lr1e8.ipynb
 │   ├── grpo_lr1e6_ngen4.ipynb
-│   ├── grpo_sft.ipynb
+│   ├── grpo_sft.ipynb                 # Post-training of the SFT model
 │   ├── grpo_rm.ipynb                  # GRPO with the reward model
+├── examples/                          # Clean training scripts
+│   ├── train_fullft.ipynb
+│   ├── train_lora.ipynb
+│   ├── train_qlora.ipynb
+│   ├── train_dpo.ipynb
+│   ├── train_grpo.ipynb
+│   ├── train_rm.ipynb
 ├── _config.example.py                 # WANDB and Groq API keys (placeholder values)
 ├── requirements.txt 
 
