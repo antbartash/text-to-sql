@@ -122,7 +122,7 @@ Predictions are scored using a hybrid approach:
 - **Exact execution match:** Score = `1.0`
 - **Mismatch:** Score = `0.7 × ROUGE-L`
 
-This rewards correct results while giving partial credit for structurally similar SQL.
+This rewards correct results while giving partial credit for structurally similar SQL. The 0.7 weight was chosen to penalize incorrect execution while still rewarding structural similarity.
 
 ---
 
