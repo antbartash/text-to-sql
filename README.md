@@ -201,7 +201,7 @@ This rewards correct results while giving partial credit for structurally simila
 6. **DPO** underperforms when used alone but improves when combined with SFT
 7. **Prompt tuning** failed for this task (0.052 score)
 8. The 8B baseline outperforms most fine-tuned 0.6B models but at 4.9x slower inference
-
+9. **8B model without quantization** exceeded available VRAM (OOM on T4 test config)
 ---
 
 ## ⚠️ Limitations & Future Work
