@@ -25,7 +25,7 @@ Generate accurate SQL queries from natural language prompts given database schem
 ### Prerequisites
 
 - Python 3.8+
-- CUDA-capable GPU (minimum 8GB VRAM for QLoRA, 16GB for Full Fine-tuning)
+- CUDA-capable GPU
 - Access to the text-to-SQL dataset (see Dataset section)
 
 ### Installation
@@ -85,6 +85,13 @@ messages = [
 
 ## 🎯 Methodology
 
+### Model info
+
+ - Base model: Qwen3-0.6B
+ - Architecture: decoder-only transformer
+ - Parameters: 596M
+ - Quantization: NF4 for QLoRA
+
 ### Training Pipeline
 
 Unless specified otherwise, training follows a 3-stage approach:
@@ -97,11 +104,11 @@ Unless specified otherwise, training follows a 3-stage approach:
 
 | Parameter | Value |
 |---|---|
-| Hardware | NVIDIA Tesla T4 / NVIDIA H100|
+| Hardware | NVIDIA Tesla T4 / NVIDIA H100 |
 | Schedule | Cosine LR with linear warmup |
 | Regularization | Gradient clipping at 1.0 (unless specified) |
 | Generation | `max_new_tokens=512` |
-| Batch size | in most cases, 2 per device with gradient accumulation |
+| Batch size | 2 per device with gradient accumulation (unless specified) |
 | Precision | FP16 (unless specified) |
 
 ### Hyperparameters Tuned
@@ -173,10 +180,14 @@ This rewards correct results while giving partial credit for structurally simila
 | SFT | LoRA | 18.6 | 10.4GB | 4.04M | 0.774 | Stage 5 result |
 | SFT | QLoRA | 16.6 | 8.8GB | 4.04M | 0.755 | |
 | SFT | Prompt Tuning | 22.5 | 9.6GB | 10,240 | 0.052 | Poor performance |
-| DPO | QLoRA | 1.52 | 11.6GB | 4.04M | 0.612 | |
-| SFT+DPO | QLoRA | 1.51 | 11.6GB | 4.04M | 0.702 | |
-| GRPO | LoRA | 1.4 | - | 4.04M | 0.758 | |
-| SFT+GRPO | LoRA | 7.4 | 11.6GB | 4.04M | 0.68 | |
+| DPO | QLoRA | 1.52 | 11.4GB | 4.04M | 0.612 | |
+| SFT+DPO | QLoRA | 1.51 | 11.9GB | 4.04M | 0.702 | |
+| GRPO | LoRA | 1.4 | ~8.9GB* | 4.04M | 0.758 | |
+| SFT+GRPO | LoRA | 7.4 | ~7.7GB* | 4.04M | 0.68 | |
+
+\* per_device_batch_size=8 (4x larger compared to SFT and DPO)
+
+<img width="1484" height="900" alt="1000001026" src="https://github.com/user-attachments/assets/99c1eaf9-a5d0-4f4d-b9e9-715275b5c985" />
 
 ---
 
@@ -190,6 +201,14 @@ This rewards correct results while giving partial credit for structurally simila
 6. **DPO** underperforms when used alone but improves when combined with SFT
 7. **Prompt tuning** failed for this task (0.052 score)
 8. The 8B baseline outperforms most fine-tuned 0.6B models but at 4.9x slower inference
+
+---
+
+## ⚠️ Limitations & Future Work
+
+- Evaluated on a single text-to-SQL dataset; schema generalization untested
+- Small base model (0.6B params); larger models may show different PEFT trade-offs
+- Limited training budget; longer training may improve further
 
 ---
 
