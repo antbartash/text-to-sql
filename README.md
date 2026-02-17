@@ -81,6 +81,23 @@ messages = [
 ]
 ```
 
+### Synthetic Data for DPO & Reward Model
+
+An additional **6,248 preference examples** were synthetically generated to train the DPO model and the reward model used in GRPO. A random sample of the original training dataset was used as seed examples, with several LLMs prompted to produce alternative (rejected) SQL queries.
+
+| Model | Samples Generated |
+|---|---|
+| llama-3.1-8b-instant | 1,700 |
+| moonshotai/kimi-k2-instruct | 1,000 |
+| meta-llama/llama-4-scout-17b-16e-instruct | 1,000 |
+| meta-llama/llama-4-maverick-17b-128e-instruct | 999 |
+| moonshotai/kimi-k2-instruct-0905 | 999 |
+| openai/gpt-oss-120b | 347 |
+| qwen/qwen3-32b | 337 |
+| llama-3.3-70b-versatile | 312 |
+| openai/gpt-oss-20b | 249 |
+| **Total** | **6,248** |
+
 ---
 
 ## 🎯 Methodology
@@ -220,6 +237,8 @@ This rewards correct results while giving partial credit for structurally simila
 ├── baseline/                          # Baseline models evaluation
 │   ├── baseline.ipynb
 │   ├── baseline-8B.ipynb
+├── data/
+│   ├── data_generation.ipynb          # Synthetic preference data generation for DPO and RM 
 ├── sft/
 │   ├── fullft.ipynb
 │   ├── lora.ipynb
@@ -230,9 +249,7 @@ This rewards correct results while giving partial credit for structurally simila
 │   ├── dpo.ipynb
 │   ├── sft_dpo.ipynb                  # Post-training of the SFT model
 ├── grpo/
-│   ├── reward_model/
-│       ├── rm_data_generation.ipynb   # Synthetic data generation for reward modeling
-│       ├── reward_model.ipynb         # Reward modeling
+│   ├── reward_model.ipynb             # RM for grpo_rm.ipynb
 │   ├── grpo_lr1e5.ipynb
 │   ├── grpo_lr1e6.ipynb
 │   ├── grpo_lr1e8.ipynb
