@@ -163,11 +163,12 @@ This rewards correct results while giving partial credit for structurally simila
 | SFT | Prompt Tuning | 1 | 4,096 | 1,024 | 30 | 7.57019 | Low virtual tokens worked best |
 | DPO | QLoRA | 1 | 6,248 | 695 | 1 | 0.11618 | |
 | SFT+DPO | QLoRA | 1 | 6,248 | 695 | 1 | 0.14759 | |
-| GRPO | LoRA | 1 | 9,750 | 250 | 1 | - | lr=1e-5, score=0.756 |
-| | | 2 | 9,750 | 250 | 1 | - | lr=1e-6, score=0.757 |
-| | | 3 | 9,750 | 250 | 1 | - | lr=1e-8, gradient_clip=0.3, score=0.757 |
-| | | 4 | 19,500 | 500 | 1 | - | lr=1e-6, num_generations=4, score=0.758 |
-| SFT+GRPO | LoRA | 5 | 9,750 | 250 | 1 | - | lr=1e-8, num_generations=8, score=0.756 |
+| GRPO | LoRA | 1 | 9,750 | 250 | 1 | - | scoring func as the reward, lr=1e-5, score=0.756 |
+| | | 2 | 9,750 | 250 | 1 | - | scoring func as the reward, lr=1e-6, score=0.757 |
+| | | 3 | 9,750 | 250 | 1 | - | scoring func as the reward, lr=1e-8, gradient_clip=0.3, score=0.696 |
+| | | 4 | 19,500 | 500 | 1 | - | scoring func as the reward, lr=1e-6, num_generations=4, longer training, score=0.758 |
+| | | RM | 9,750 | 250 | 1 | - | scoring func + RM as the reward, lr=1e-8, num_generations=8, score=0.68 |
+| SFT+GRPO | LoRA | 5 | 9,750 | 250 | 1 | - | scoring func as the reward, lr=1e-8, num_generations=8, score=0.755 |
 
 ### Final Model Comparison
 
@@ -183,11 +184,11 @@ This rewards correct results while giving partial credit for structurally simila
 | DPO | QLoRA | 1.52 | 11.4GB | 4.04M | 0.612 | |
 | SFT+DPO | QLoRA | 1.51 | 11.9GB | 4.04M | 0.702 | |
 | GRPO | LoRA | 1.4 | ~8.9GB* | 4.04M | 0.758 | |
-| SFT+GRPO | LoRA | 7.4 | ~7.7GB* | 4.04M | 0.68 | |
+| SFT+GRPO | LoRA | 7.4 | ~7.7GB* | 4.04M | 0.755 | |
 
 \* per_device_batch_size=8 (4x larger compared to SFT and DPO)
 
-<img width="1484" height="900" alt="1000001026" src="https://github.com/user-attachments/assets/99c1eaf9-a5d0-4f4d-b9e9-715275b5c985" />
+<img width="1484" height="900" alt="177132266266725325225405841586" src="https://github.com/user-attachments/assets/09a72d56-431a-4711-a3f2-fb70b4696e8a" />
 
 ---
 
@@ -202,11 +203,12 @@ This rewards correct results while giving partial credit for structurally simila
 7. **Prompt tuning** failed for this task (0.052 score)
 8. The 8B baseline outperforms most fine-tuned 0.6B models but at 4.9x slower inference
 9. **8B model without quantization** exceeded available VRAM (OOM on T4 test config)
+
 ---
 
 ## ⚠️ Limitations & Future Work
 
-- Evaluated on a single text-to-SQL dataset; schema generalization untested
+- Synthetic data quality for DPO and GRPO-RM likely bottlenecks performance; improving the generation pipeline is the most promising avenue for further gains
 - Small base model (0.6B params); larger models may show different PEFT trade-offs
 - Limited training budget; longer training may improve further
 
