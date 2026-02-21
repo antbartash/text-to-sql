@@ -10,6 +10,7 @@ datasets
 evaluate
 rouge-score
 liger-kernel
+rich
 wandb
 nbformat
 tqdm
