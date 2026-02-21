@@ -9,7 +9,9 @@ peft
 datasets
 evaluate
 rouge-score
+liger-kernel
 wandb
+nbformat
 tqdm
 sqlparse
 psutil
