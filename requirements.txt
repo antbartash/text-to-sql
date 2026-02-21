@@ -2,7 +2,7 @@ numpy
 pandas
 matplotlib
 torch
-transformers
+transformers==4.57.6
 bitsandbytes
 trl
 peft
