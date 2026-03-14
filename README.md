@@ -258,6 +258,26 @@ This rewards correct results while giving partial credit for structurally simila
 
 ---
 
+## 🔬 Discussion
+
+**Why prompt tuning failed**
+
+The 0.052 score isn't just a tuning failure - it reflects a fundamental mismatch between the method and the task. Soft prompt tokens only influence the model at the input boundary; their effect attenuates as generation progresses. For a task that requires structurally strict output potentially hundreds of tokens long, that's not enough leverage. A 0.6B model with limited representational capacity compounds the problem — there's less room for a few learned tokens to meaningfully redirect behavior. Prompt tuning may be viable for classification or short-form tasks on this architecture, but for structured generation it's the wrong tool.
+
+**Why GRPO + reward model underperformed plain GRPO**
+
+The reward model was trained on 6,248 synthetically generated preference pairs with no category stratification and no quality control beyond prompt diversity across models. The hypothesis is that the RM learned surface-level SQL patterns rather than a meaningful quality signal — and injecting a noisy reward into GRPO hurt more than it helped. Generating genuinely useful preference data (with schema diversity, difficulty tiers, and execution-verified labels) was out of scope for this project, but it's the most promising lever for improvement.
+
+**The bf16 + TF32 VRAM behavior explained**
+
+The 74.5GB spike when running bf16 without TF32 is not a random anomaly. When TF32 is disabled, PyTorch uses full fp32 accumulation for matrix multiplications internally - weights stay in bf16 but gradient accumulations and matmul intermediates expand to fp32. TF32 is what keeps those intermediate computations in reduced precision. So the TF32 flag is doing most of the memory work; bf16 dtype alone is insufficient. Practical implication: **always benchmark with and without TF32 explicitly** — the default behavior is hardware-dependent and the memory difference is not subtle.
+
+**What would come next**
+
+The two most promising directions are a larger base model (7B range) to see how PEFT trade-offs shift at scale, and a proper synthetic data pipeline for DPO/GRPO — execution-verified, category-balanced, with explicit quality filtering. The current results suggest the 0.6B model is near its ceiling with good training; the remaining gains are most likely in data quality and model scale.
+
+---
+
 ## ⚠️ Limitations & Future Work
 
 - Synthetic data quality for DPO and GRPO-RM likely bottlenecks performance; improving the generation pipeline is the most promising avenue for further gains
