@@ -4,6 +4,16 @@ A comprehensive comparison of LLM fine-tuning methods for text-to-SQL generation
 
 ---
 
+## ⚡ TL;DR
+
+- **Best result:** SFT FullFT scores **0.793**, edging out an 8B baseline (0.784) at 4.9× faster inference
+- **Best efficiency:** LoRA matches 97% of FullFT performance with 0.68% of trainable parameters (10.4GB vs 15.8GB VRAM)
+- **RL methods:** GRPO reaches 0.758 without SFT pretraining; DPO alone underperforms but recovers with SFT warmup
+- **Engineering highlight:** Liger kernel + bf16 + TF32 + FA3 cuts VRAM 66% and trains 2.9× faster vs fp32 baseline
+- **Stack:** Qwen3-0.6B · HuggingFace TRL · W&B Sweeps (Bayesian) · PyTorch DDP · T4 / H100
+
+---
+
 ## 📋 Task Description
 
 Generate accurate SQL queries from natural language prompts given database schema context.
@@ -70,7 +80,10 @@ To reproduce the full experimental results:
 
 ## 📊 Dataset
 
+- **Source:** [`gretelai/synthetic_text_to_sql`](https://huggingface.co/datasets/gretelai/synthetic_text_to_sql) (Apache 2.0)
 - **Size:** 97,500 training / 2,500 validation / 5,851 test examples
+- **Coverage:** 100 distinct domains, ~23M tokens (~12M SQL tokens)
+- **SQL complexity:** simple SELECT, JOINs (single & multiple), aggregations, window functions, subqueries, set operations
 - **Format:** Natural language questions paired with SQL contexts and target queries
 - **Message structure:**
 
@@ -102,12 +115,12 @@ An additional **6,248 preference examples** were synthetically generated to trai
 
 ## 🎯 Methodology
 
-### Model info
+### Model Info
 
- - Base model: Qwen3-0.6B
- - Architecture: decoder-only transformer
- - Parameters: 596M
- - Quantization: NF4 for QLoRA
+- Base model: Qwen3-0.6B
+- Architecture: decoder-only transformer
+- Parameters: 596M
+- Quantization: NF4 for QLoRA
 
 ### Training Pipeline
 
@@ -128,14 +141,36 @@ Unless specified otherwise, training follows a 3-stage approach:
 | Batch size | 2 per device with gradient accumulation (unless specified) |
 | Precision | FP16 (unless specified) |
 
-### Hyperparameters Tuned
+### Hyperparameter Search
 
-- Optimizer type
-- Effective batch size
-- Learning rate & weight decay
-- Optimizer betas
-- Warmup ratio
-- Method-specific parameters (e.g., LoRA rank)
+Hyperparameters were tuned using **Bayesian search** via W&B Sweeps. The search space included:
+
+| Parameter | Values Explored |
+|---|---|
+| Optimizer | adam, adamw, nadam, adamax |
+| Learning rate | 1e-6, 5e-6, 1e-5, 5e-5, 1e-4 |
+| Effective batch size | 16, 32, 64, 128, 256, 512 |
+| LR scheduler | cosine, linear, cosine_with_restarts, constant_with_warmup |
+| Weight decay | 0.0, 0.01, 0.1 |
+| Optimizer betas | (0.9, 0.999), (0.95, 0.999), (0.9, 0.9999) |
+| Warmup ratio | 0.05, 0.1, 0.2 |
+| LoRA rank | 4, 8, 16, 32 |
+| LoRA alpha | 2, 4, 8, 16, 32, 64 |
+| LoRA dropout | 0.01, 0.05, 0.1, 0.2 |
+
+### GRPO Configuration
+
+| Parameter | Value |
+|---|---|
+| num_generations | 8 (4 in some runs) |
+| KL penalty (β) | 0.04 (TRL default) |
+| LoRA rank / alpha | 64 / 256, target: all-linear |
+| Reward signal | hybrid scoring function (± learned RM) |
+| Gradient clipping | 1.0 (0.3 in one ablation) |
+
+### Reward Model
+
+The reward model is **Qwen3-0.6B** with a linear classification head (`AutoModelForSequenceClassification`), trained using TRL's `RewardTrainer` with Bradley-Terry pairwise ranking loss on the 6,248 synthetic preference pairs. It was used as an auxiliary reward signal alongside the scoring function in `grpo_rm.ipynb`.
 
 ---
 
@@ -146,7 +181,7 @@ Predictions are scored using a hybrid approach:
 - **Exact execution match:** Score = `1.0`
 - **Mismatch:** Score = `0.7 × ROUGE-L`
 
-This rewards correct results while giving partial credit for structurally similar SQL. The 0.7 weight was chosen to penalize incorrect execution while still rewarding structural similarity.
+This rewards correct results while giving partial credit for structurally similar SQL. The 0.7 weight was chosen heuristically to penalize incorrect execution while still rewarding structural similarity.
 
 ---
 
@@ -267,7 +302,6 @@ This rewards correct results while giving partial credit for structurally simila
 │   ├── utils.py                       # GPU-aware training config detection and resource monitoring utilities
 ├── _config.example.py                 # WANDB and Groq API keys (placeholder values)
 ├── requirements.txt 
-
 ```
 
 ---
