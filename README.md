@@ -257,12 +257,14 @@ This rewards correct results while giving partial credit for structurally simila
 │   ├── grpo_sft.ipynb                 # Post-training of the SFT model
 │   ├── grpo_rm.ipynb                  # GRPO with the reward model
 ├── examples/                          # Clean training scripts
+│   ├── train_fullft_ddp.py            # Training script for multi-GPU DDP
 │   ├── train_fullft.ipynb
 │   ├── train_lora.ipynb
 │   ├── train_qlora.ipynb
 │   ├── train_dpo.ipynb
 │   ├── train_grpo.ipynb
 │   ├── train_rm.ipynb
+│   ├── utils.py                       # GPU-aware training config detection and resource monitoring utilities
 ├── _config.example.py                 # WANDB and Groq API keys (placeholder values)
 ├── requirements.txt 
 
@@ -304,4 +306,3 @@ Benchmarking results for full fine-tuning (FullFT) on Qwen3-0.6B across differen
 3. **Liger kernel impact:** Reduces VRAM by 66% (55.3GB → 18.9GB) with FP32, no performance loss
 4. **FlashAttention-3:** Consistently faster than SDPA and Eager across all configurations
 5. **Batch size scaling:** Larger batches degrade eval loss on this task (0.3531 @ bs=256 vs 0.3969 @ bs=1024 on similar hardware)
-```
